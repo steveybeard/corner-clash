@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<title>Corner Clash</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0b1020;color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif}
+.app{max-width:1050px;margin:auto;padding:12px 10px 30px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+h1{margin:0;font-size:30px;letter-spacing:-1px}
+button{font:inherit;border:0;color:inherit;cursor:pointer}
+.btn{background:#202b45;color:#fff;padding:10px 13px;border-radius:12px;font-weight:750}
+.scores{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.score{padding:8px 5px;border-radius:12px;text-align:center;background:#182238;border:2px solid transparent;font-size:11px;font-weight:800}
+.score b{display:block;font-size:19px;margin-top:2px}
+.c0{color:#38bdf8}.c1{color:#facc15}.c2{color:#fb7185}.c3{color:#4ade80}
+.score.active{border-color:currentColor}
+.layout{display:flex;flex-direction:column;align-items:center}
+.board{width:min(96vw,680px);aspect-ratio:1;display:grid;grid-template-columns:repeat(20,1fr);gap:1px;padding:2px;background:#334155;border-radius:10px;touch-action:none}
+.cell{background:#eef2f7;border-radius:1px}
+.cell.p0{background:#38bdf8}.cell.p1{background:#facc15}.cell.p2{background:#fb7185}.cell.p3{background:#4ade80}
+.cell.corner{box-shadow:inset 0 0 0 3px currentColor}
+.cell.start-target{animation:pulse 1s infinite;box-shadow:inset 0 0 0 3px currentColor,0 0 8px currentColor}
+.cell.preview{background:#fff!important;box-shadow:inset 0 0 0 2px #22c55e}
+.cell.drop-preview{background:#bbf7d0!important;box-shadow:inset 0 0 0 2px #16a34a}
+@keyframes pulse{50%{filter:brightness(1.35)}}
+.panel{width:min(96vw,680px);margin-top:10px;background:#151e31;border:1px solid #273552;border-radius:16px;padding:12px}
+.status{text-align:center;font-size:14px;color:#cbd5e1;min-height:21px;margin-bottom:9px}
+.tray{display:flex;gap:8px;overflow-x:auto;padding-bottom:5px;scrollbar-width:none}
+.tray::-webkit-scrollbar{display:none}
+.piece{position:relative;flex:0 0 76px;height:76px;touch-action:none;user-select:none;-webkit-user-select:none;border-radius:13px;background:#202b45;border:2px solid transparent;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.piece.c0{color:#38bdf8}.piece.c1{color:#facc15}.piece.c2{color:#fb7185}.piece.c3{color:#4ade80}
+.piece.sel{border-color:currentColor}
+.mini{width:12px;height:12px;border-radius:3px;background:currentColor;box-shadow:inset 0 0 0 1px #ffffff55}
+.grid{display:grid;gap:2px}
+.label{position:absolute;bottom:3px;left:2px;right:2px;font-size:8px;text-align:center;color:#cbd5e1;font-weight:800}
+.dragging{position:fixed!important;z-index:50;pointer-events:none;transform:scale(1.08);opacity:.94}
+.actions{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+.help{margin-top:9px;text-align:center;color:#94a3b8;font-size:12px;line-height:1.4}
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+.modal.show{display:flex}
+.modalbox{max-width:560px;max-height:85vh;overflow:auto;background:#151e31;border:1px solid #34425f;border-radius:18px;padding:20px}
+.modalbox h2{margin-top:0}.modalbox li{margin:8px 0;color:#dbe4f0}
+@media(max-width:430px){h1{font-size:27px}.btn{padding:9px 11px}.piece{flex-basis:70px;height:70px}.panel{padding:10px}.actions .btn{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>Corner Clash</h1><button class="btn" onclick="newGame()">New Game</button></header>
+<div class="scores" id="scores"></div>
+<div class="layout">
+<div id="board" class="board"></div>
+<div class="panel">
+<div id="status" class="status"></div>
+<div id="tray" class="tray"></div>
+<div class="actions">
+<button class="btn" onclick="rotate()">↻ Rotate</button>
+<button class="btn" onclick="flip()">⇄ Flip</button>
+<button class="btn" onclick="passTurn()">Pass</button>
+<button class="btn" onclick="clearSel()">Cancel</button>
+<button class="btn" onclick="showRules()">Rules</button>
+</div>
+<div class="help">Tap a piece to select it, then tap a green square to place it. Or press and hold a piece and drag it onto the board.</div>
+</div></div></div>
+
+<div id="modal" class="modal" onclick="if(event.target===this)hideRules()">
+<div class="modalbox">
+<h2>Corner Clash — Standard Rules</h2>
+<ul>
+<li>Each player has 21 pieces.</li>
+<li>On your first turn, your piece must cover your own starting corner.</li>
+<li>Every later piece must touch at least one of your own pieces corner-to-corner.</li>
+<li>Your own pieces may never touch edge-to-edge.</li>
+<li>Different colours may touch by edges or corners.</li>
+<li>Pieces cannot overlap and placed pieces cannot be moved.</li>
+<li>Pieces may be rotated or reflected before placement.</li>
+<li>If you have a legal move, you must make one. If you have no legal move, you pass.</li>
+<li>The game ends when all players are blocked or have no pieces left.</li>
+<li>Scoring: unplayed squares are −1 each. Playing all 21 pieces earns +15. Finishing with the one-square piece adds +5.</li>
+<li>Highest score wins.</li>
+</ul>
+<p style="color:#94a3b8">Starting order: Blue, Yellow, Red, Green.</p>
+<button class="btn" onclick="hideRules()">Close</button>
+</div></div>
+
+<script>
+const N=20;
+const COLORS=["c0","c1","c2","c3"];
+const NAMES=["BLUE","YELLOW","RED","GREEN"];
+const START=[[0,0],[N-1,0],[N-1,N-1],[0,N-1]];
+
+const pieces=[
+{id:0,size:1,c:[[0,0]]},
+{id:1,size:2,c:[[0,0],[0,1]]},
+{id:2,size:3,c:[[0,0],[0,1],[0,2]]},
+{id:3,size:3,c:[[0,0],[0,1],[1,0]]},
+{id:4,size:4,c:[[0,0],[0,1],[0,2],[0,3]]},
+{id:5,size:4,c:[[0,0],[0,1],[0,2],[1,0]]},
+{id:6,size:4,c:[[0,0],[0,1],[0,2],[1,1]]},
+{id:7,size:4,c:[[0,0],[0,1],[1,0],[1,1]]},
+{id:8,size:4,c:[[0,0],[0,1],[1,1],[1,2]]},
+{id:9,size:5,c:[[0,0],[0,1],[0,2],[0,3],[0,4]]},
+{id:10,size:5,c:[[0,0],[0,1],[0,2],[0,3],[1,0]]},
+{id:11,size:5,c:[[0,0],[0,1],[0,2],[0,3],[1,1]]},
+{id:12,size:5,c:[[0,0],[0,1],[0,2],[1,0],[1,1]]},
+{id:13,size:5,c:[[0,0],[0,1],[0,2],[1,0],[1,2]]},
+{id:14,size:5,c:[[0,0],[0,1],[0,2],[1,0],[2,0]]},
+{id:15,size:5,c:[[0,0],[0,1],[0,2],[1,1],[2,1]]},
+{id:16,size:5,c:[[0,0],[0,1],[0,2],[1,2],[1,3]]},
+{id:17,size:5,c:[[0,0],[0,1],[1,1],[1,2],[2,1]]},
+{id:18,size:5,c:[[0,0],[0,1],[1,1],[1,2],[2,2]]},
+{id:19,size:5,c:[[0,0],[0,1],[1,1],[2,1],[2,2]]},
+{id:20,size:5,c:[[0,1],[1,0],[1,1],[1,2],[2,1]]}
+];
+
+let board,player,scores,used,sel,passes,over,lastPiece,drag=null;
+
+function newGame(){
+ board=Array.from({length:N},()=>Array(N).fill(-1));
+ player=0;scores=[0,0,0,0];
+ used=[new Set(),new Set(),new Set(),new Set()];
+ sel=null;passes=0;over=false;lastPiece=[null,null,null,null];
+ render();
+ msg("BLUE starts — your first piece must cover the blue corner.");
+}
+
+function norm(c){
+ let mx=Math.min(...c.map(a=>a[0])),my=Math.min(...c.map(a=>a[1]));
+ return c.map(a=>[a[0]-mx,a[1]-my]).sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
+}
+function rotate(){
+ if(sel){sel.c=norm(sel.c.map(([x,y])=>[-y,x]));renderTray();renderBoard();}
+}
+function flip(){
+ if(sel){sel.c=norm(sel.c.map(([x,y])=>[-x,y]));renderTray();renderBoard();}
+}
+function cells(p,r,c){return norm(p.c).map(([x,y])=>[c+x,r+y]);}
+
+function legal(p,r,c){
+ let cs=cells(p,r,c);
+ if(cs.some(([x,y])=>x<0||x>=N||y<0||y>=N))return false;
+ if(cs.some(([x,y])=>board[y][x]!==-1))return false;
+ let diag=false;
+ for(const [x,y] of cs){
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   const X=x+dx,Y=y+dy;
+   if(X>=0&&X<N&&Y>=0&&Y<N&&board[Y][X]===player)return false;
+  }
+  for(const [dx,dy] of [[1,1],[1,-1],[-1,1],[-1,-1]]){
+   const X=x+dx,Y=y+dy;
+   if(X>=0&&X<N&&Y>=0&&Y<N&&board[Y][X]===player)diag=true;
+  }
+ }
+ if(used[player].size===0){
+  const [sx,sy]=START[player];
+  return cs.some(([x,y])=>x===sx&&y===sy);
+ }
+ return diag;
+}
+
+function select(id){
+ const p=pieces.find(x=>x.id===id);
+ sel={...p,c:norm(p.c.map(a=>[...a]))};
+ msg("Green squares are legal placements. Tap one to place.");
+ renderTray();renderBoard();
+}
+function clearSel(){sel=null;clearDropPreview();renderTray();renderBoard();}
+function place(r,c){
+ if(!sel||over)return;
+ if(!legal(sel,r,c)){msg("Illegal placement — connect at a corner, never along an edge.");return;}
+ cells(sel,r,c).forEach(([x,y])=>board[y][x]=player);
+ scores[player]+=sel.size;
+ used[player].add(sel.id);
+ lastPiece[player]=sel.id;
+ sel=null;passes=0;next();
+}
+
+function passTurn(){
+ if(over)return;
+ if(hasMove()){msg("You cannot pass while a legal move is available.");return;}
+ passes++;sel=null;
+ if(passes>=4){finish();return;}
+ player=(player+1)%4;render();
+ msg(NAMES[player]+" has no legal move and passes.");
+}
+function next(){
+ player=(player+1)%4;
+ if(!hasMove()){
+  passes++;
+  if(passes>=4){finish();return;}
+  render();
+  msg(NAMES[player]+" has no legal move and passes.");
+  setTimeout(()=>{if(!over)passTurn();},450);
+  return;
+ }
+ render();
+ msg(used[player].size===0?NAMES[player]+" turn — first piece must cover your corner.":NAMES[player]+" turn.");
+}
+function hasMove(){
+ for(const p of pieces)
+  if(!used[player].has(p.id))
+   for(let r=0;r<N;r++)for(let c=0;c<N;c++)
+    if(legal(p,r,c))return true;
+ return false;
+}
+function finish(){
+ over=true;
+ for(let i=0;i<4;i++){
+  let remaining=pieces.filter(p=>!used[i].has(p.id)).reduce((a,p)=>a+p.size,0);
+  scores[i]=-remaining;
+  if(used[i].size===21){scores[i]+=15;if(lastPiece[i]===0)scores[i]+=5;}
+ }
+ render();
+ const m=Math.max(...scores);
+ const winners=NAMES.filter((n,i)=>scores[i]===m).join(" & ");
+ msg("Game over — "+winners+" has the highest score. "+NAMES.map((n,i)=>n+" "+scores[i]).join(" • "));
+}
+function msg(t){document.getElementById("status").textContent=t;}
+
+function render(){renderScores();renderTray();renderBoard();}
+function renderScores(){
+ document.getElementById("scores").innerHTML=NAMES.map((n,i)=>
+ `<div class="score ${COLORS[i]} ${i===player&&!over?"active":""}">${n}<b>${scores[i]}</b></div>`
+ ).join("");
+}
+
+function renderBoard(){
+ const el=document.getElementById("board");el.innerHTML="";
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+  const d=document.createElement("div");d.className="cell";
+  if(board[r][c]>=0)d.classList.add("p"+board[r][c]);
+  if(board[r][c]===-1){
+   for(let i=0;i<4;i++){
+    if(START[i][0]===c&&START[i][1]===r){
+     d.classList.add(COLORS[i],"corner");
+     if(i===player&&used[player].size===0)d.classList.add("start-target");
+    }
+   }
+  }
+  if(sel&&legal(sel,r,c))d.classList.add("preview");
+  d.onclick=()=>place(r,c);
+  el.appendChild(d);
+ }
+}
+
+function renderTray(){
+ const el=document.getElementById("tray");el.innerHTML="";
+ pieces.filter(p=>!used[player].has(p.id)).forEach(p=>{
+  const b=document.createElement("button");
+  b.className=`piece ${COLORS[player]} ${sel?.id===p.id?"sel":""}`;
+  const c=norm(sel?.id===p.id?sel.c:p.c);
+  const w=Math.max(...c.map(a=>a[0]))+1;
+  const g=document.createElement("span");g.className="grid";
+  g.style.gridTemplateColumns=`repeat(${w},12px)`;
+  c.forEach(([x,y])=>{
+   const m=document.createElement("span");m.className="mini";
+   m.style.gridColumn=x+1;m.style.gridRow=y+1;g.appendChild(m);
+  });
+  b.appendChild(g);
+  const l=document.createElement("span");l.className="label";l.textContent=p.size+"□";b.appendChild(l);
+  b.onclick=()=>{if(!drag)select(p.id);};
+  b.onpointerdown=e=>startDrag(e,p);
+  b.onpointermove=e=>moveDrag(e);
+  b.onpointerup=e=>endDrag(e);
+  b.onpointercancel=e=>{if(drag)endDrag(e)};
+  el.appendChild(b);
+ });
+}
+
+function boardFromPoint(x,y){
+ const el=document.getElementById("board"),rect=el.getBoundingClientRect();
+ const inner=rect.width-4;
+ if(x<rect.left+2||x>rect.right-2||y<rect.top+2||y>rect.bottom-2)return null;
+ const cell=inner/N;
+ return [
+  Math.max(0,Math.min(N-1,Math.floor((x-rect.left-2)/cell))),
+  Math.max(0,Math.min(N-1,Math.floor((y-rect.top-2)/cell)))
+ ];
+}
+function clearDropPreview(){
+ document.querySelectorAll(".drop-preview").forEach(e=>e.classList.remove("drop-preview"));
+}
+function previewAt(x,y){
+ clearDropPreview();
+ if(!sel)return;
+ const pos=boardFromPoint(x,y);if(!pos)return;
+ const [c,r]=pos;
+ if(legal(sel,r,c)){
+  cells(sel,r,c).forEach(([xx,yy])=>{
+   const el=document.getElementById("board").children[yy*N+xx];
+   if(el)el.classList.add("drop-preview");
+  });
+ }
+}
+function startDrag(e,p){
+ if(e.pointerType==="mouse"&&e.button!==0)return;
+ e.preventDefault();
+ select(p.id);
+ const b=e.currentTarget;
+ try{b.setPointerCapture(e.pointerId)}catch(_){}
+ drag={id:p.id,el:b,pointerId:e.pointerId};
+ b.classList.add("dragging");
+ moveDrag(e);
+}
+function moveDrag(e){
+ if(!drag)return;
+ e.preventDefault();
+ const b=drag.el;
+ b.style.left=(e.clientX-38)+"px";
+ b.style.top=(e.clientY-38)+"px";
+ previewAt(e.clientX,e.clientY);
+}
+function endDrag(e){
+ if(!drag)return;
+ e.preventDefault();
+ const d=drag;
+ const pos=boardFromPoint(e.clientX,e.clientY);
+ try{d.el.releasePointerCapture(d.pointerId)}catch(_){}
+ d.el.classList.remove("dragging");
+ d.el.style.left="";d.el.style.top="";d.el.style.width="";d.el.style.height="";
+ clearDropPreview();drag=null;
+ if(pos&&sel&&legal(sel,pos[1],pos[0]))place(pos[1],pos[0]);
+ else{msg("Drop it on a green legal position.");renderTray();renderBoard();}
+}
+
+function showRules(){document.getElementById("modal").classList.add("show")}
+function hideRules(){document.getElementById("modal").classList.remove("show")}
+newGame();
+</script>
+</body>
+</html>
