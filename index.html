@@ -2,8 +2,56 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#0b1020"><title>Corner Clash</title>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:#0b1020;color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif}.app{max-width:1050px;margin:auto;padding:12px 10px 25px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}h1{margin:0;font-size:28px;letter-spacing:-1px}button{font:inherit;border:0;color:inherit;cursor:pointer}.btn{background:#202b45;color:#fff;padding:10px 13px;border-radius:12px;font-weight:750}.scores{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}.score{padding:8px 5px;border-radius:12px;text-align:center;background:#182238;border:2px solid transparent;font-size:11px;font-weight:800}.score b{display:block;font-size:18px;margin-top:2px}.score.active{border-color:currentColor}.c0{color:#38bdf8}.c1{color:#facc15}.c2{color:#fb7185}.c3{color:#4ade80}.layout{display:flex;flex-direction:column;align-items:center}.board{width:min(96vw,680px);aspect-ratio:1;display:grid;grid-template-columns:repeat(20,1fr);gap:1px;padding:2px;background:#334155;border-radius:10px;touch-action:manipulation}.cell{background:#eef2f7;border-radius:1px}.cell.p0{background:#38bdf8}.cell.p1{background:#facc15}.cell.p2{background:#fb7185}.cell.p3{background:#4ade80}.cell.corner{box-shadow:inset 0 0 0 3px currentColor}.cell.preview{background:#fff!important;box-shadow:inset 0 0 0 2px #22c55e}.cell.drop-preview{background:#bbf7d0!important;box-shadow:inset 0 0 0 2px #16a34a}.dragging{position:fixed!important;z-index:50;pointer-events:none;transform:scale(1.08);opacity:.94}.panel{width:min(96vw,680px);margin-top:10px;background:#151e31;border:1px solid #273552;border-radius:16px;padding:12px}.status{text-align:center;font-size:14px;color:#cbd5e1;min-height:21px;margin-bottom:9px}.tray{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.piece{position:relative;flex:0 0 76px;height:76px;touch-action:none;user-select:none;border-radius:13px;background:#202b45;color:#38bdf8;border:2px solid transparent;display:flex;align-items:center;justify-content:center}.piece.sel{border-color:currentColor}.mini{width:12px;height:12px;border-radius:3px;background:currentColor;box-shadow:inset 0 0 0 1px #ffffff55}.grid{display:grid;gap:2px}.label{position:absolute;bottom:3px;left:2px;right:2px;font-size:8px;text-align:center;color:#cbd5e1;font-weight:800}.actions{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}.help{margin-top:9px;text-align:center;color:#94a3b8;font-size:12px}.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:20px;z-index:20}.modal.show{display:flex}.modalbox{max-width:560px;max-height:85vh;overflow:auto;background:#151e31;border:1px solid #34425f;border-radius:18px;padding:20px}.modalbox h2{margin-top:0}.modalbox li{margin:8px 0;color:#dbe4f0}
-</style></head><body><div class="app"><header><h1>Corner Clash</h1><button class="btn" onclick="newGame()">New Game</button></header><div class="scores" id="scores"></div><div class="layout"><div id="board" class="board"></div><div class="panel"><div id="status" class="status"></div><div id="tray" class="tray"></div><div class="actions"><button class="btn" onclick="rotate()">↻ Rotate</button><button class="btn" onclick="flip()">⇄ Flip</button><button class="btn" onclick="passTurn()">Pass</button><button class="btn" onclick="clearSel()">Cancel</button><button class="btn" onclick="showRules()">Rules</button></div><div class="help">Press and hold a piece, then drag it onto the board. The piece follows your finger and the board shows exactly where it will land. Release to place. Tap a piece if you prefer, then tap a legal square.</div></div></div></div>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#080d18;--panel:#111a2b;--panel2:#172238;--line:#273754;--muted:#91a0b8;--white:#f8fafc}
+html{background:var(--bg)}
+body{margin:0;background:radial-gradient(circle at 50% -10%,#1b3152 0,#0d1526 34%,#080d18 72%);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;min-height:100vh}
+.app{max-width:760px;margin:auto;padding:16px 12px 28px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#38bdf8,#2563eb);display:grid;place-items:center;box-shadow:0 8px 24px #2563eb44;font-size:22px;font-weight:900}
+.brandtext h1{margin:0;font-size:27px;line-height:1;letter-spacing:-1px}
+.brandtext small{display:block;margin-top:4px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.3px}
+button{font:inherit;border:0;color:inherit;cursor:pointer}
+.btn{background:#202d47;color:#fff;padding:10px 13px;border-radius:12px;font-weight:800;box-shadow:inset 0 1px #ffffff10}
+.btn:active{transform:scale(.97)}
+.newgame{background:#263c63}
+.scores{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px}
+.score{position:relative;padding:9px 5px 8px;border-radius:14px;text-align:center;background:#111a2b;border:1px solid var(--line);font-size:10px;font-weight:850;letter-spacing:.5px;overflow:hidden}
+.score b{display:block;font-size:20px;line-height:1.05;margin-top:3px;color:#fff;letter-spacing:0}
+.score.active{border-color:currentColor;background:#172238;box-shadow:0 0 0 1px currentColor inset,0 7px 18px #0003}
+.score.active:after{content:"YOUR TURN";display:block;font-size:7px;margin-top:3px;letter-spacing:.7px;color:currentColor}
+.c0{color:#38bdf8}.c1{color:#facc15}.c2{color:#fb7185}.c3{color:#4ade80}
+.gamecard{background:#0f1728aa;border:1px solid #263754;border-radius:22px;padding:10px;box-shadow:0 18px 45px #0004}
+.layout{display:flex;flex-direction:column;align-items:center}
+.boardwrap{width:min(96vw,680px);padding:8px;border-radius:18px;background:linear-gradient(145deg,#31415e,#18253c);box-shadow:0 10px 30px #0006,inset 0 1px #ffffff14}
+.board{width:100%;aspect-ratio:1;display:grid;grid-template-columns:repeat(20,1fr);gap:1px;padding:3px;background:#475873;border-radius:12px;touch-action:manipulation;overflow:hidden}
+.cell{background:#e8edf3;border-radius:1px}
+.cell.p0{background:#38bdf8}.cell.p1{background:#facc15}.cell.p2{background:#fb7185}.cell.p3{background:#4ade80}
+.cell.corner{box-shadow:inset 0 0 0 3px currentColor}
+.cell.preview{background:#fff!important;box-shadow:inset 0 0 0 2px #22c55e}
+.cell.drop-preview{background:#bbf7d0!important;box-shadow:inset 0 0 0 2px #16a34a}
+.dragging{position:fixed!important;z-index:50;pointer-events:none;transform:scale(1.1);opacity:.96;filter:drop-shadow(0 12px 10px #0008)}
+.panel{width:100%;margin-top:10px;background:linear-gradient(180deg,#162238,#101a2b);border:1px solid #293957;border-radius:18px;padding:13px}
+.status{text-align:center;font-size:14px;font-weight:750;color:#dbe5f3;min-height:21px;margin:0 0 11px}
+.traytitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.traytitle strong{font-size:12px;letter-spacing:.4px}.traytitle span{font-size:11px;color:var(--muted)}
+.tray{display:flex;gap:8px;overflow-x:auto;padding:2px 1px 7px;scrollbar-width:none}
+.tray::-webkit-scrollbar{display:none}
+.piece{position:relative;flex:0 0 68px;height:68px;touch-action:none;user-select:none;border-radius:14px;background:#202d47;color:#38bdf8;border:2px solid transparent;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px #ffffff0d}
+.piece.sel{border-color:currentColor;background:#263653;box-shadow:0 0 0 1px currentColor inset,0 6px 14px #0003}
+.mini{width:11px;height:11px;border-radius:3px;background:currentColor;box-shadow:inset 0 0 0 1px #ffffff55}
+.grid{display:grid;gap:2px}
+.label{position:absolute;bottom:3px;left:2px;right:2px;font-size:8px;text-align:center;color:#b9c5d7;font-weight:850}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:7px}
+.actions .btn{padding:10px 5px;font-size:12px}
+.help{margin:10px 3px 1px;text-align:center;color:#8190a8;font-size:11px;line-height:1.4}
+.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
+.modal.show{display:flex}
+.modalbox{width:min(560px,100%);max-height:85vh;overflow:auto;background:#121d30;border:1px solid #34445f;border-radius:20px;padding:20px;box-shadow:0 20px 60px #0009}
+.modalbox h2{margin-top:0}.modalbox li{margin:8px 0;color:#dbe4f0}
+@media(max-width:430px){.app{padding:12px 9px 22px}.brandtext h1{font-size:24px}.logo{width:38px;height:38px}.scores{gap:5px}.score{padding:8px 3px}.score b{font-size:18px}.actions{grid-template-columns:repeat(4,1fr)}.actions .btn{font-size:11px}}
+</style></head><body><div class="app"><header><div class="brand"><div class="logo">◆</div><div class="brandtext"><h1>Corner Clash</h1><small>CLASSIC CORNER-TO-CORNER</small></div></div><button class="btn newgame" onclick="newGame()">New Game</button></header><div class="scores" id="scores"></div><div class="gamecard"><div class="layout"><div class="boardwrap"><div id="board" class="board"></div></div><div class="panel"><div id="status" class="status"></div><div class="traytitle"><strong>Your pieces</strong><span>Drag or tap to play</span></div><div id="tray" class="tray"></div><div class="actions"><button class="btn" onclick="rotate()">↻ Rotate</button><button class="btn" onclick="flip()">⇄ Flip</button><button class="btn" onclick="passTurn()">Pass</button><button class="btn" onclick="showRules()">Rules</button></div><div class="help">Place pieces so they touch your own colour only at corners. Green shows legal positions.</div></div></div></div></div>
 <div id="modal" class="modal" onclick="if(event.target===this)hideRules()"><div class="modalbox"><h2>Corner Clash — Standard Rules</h2><ul>
 <li>Each player has 21 pieces: 1 one-square, 1 two-square, 2 three-square, 5 four-square and 12 five-square pieces.</li>
 <li>On your first turn, your piece must cover your starting corner.</li>
