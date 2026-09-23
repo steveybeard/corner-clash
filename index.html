@@ -6,7 +6,7 @@
 :root{--bg:#080d18;--panel:#111a2b;--panel2:#172238;--line:#273754;--muted:#91a0b8;--white:#f8fafc}
 html{background:var(--bg)}
 body{margin:0;background:radial-gradient(circle at 50% -10%,#1b3152 0,#0d1526 34%,#080d18 72%);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;min-height:100vh}
-.app{max-width:760px;margin:auto;padding:16px 12px 28px}
+.app{max-width:760px;margin:auto;padding:calc(16px + env(safe-area-inset-top)) 12px calc(28px + env(safe-area-inset-bottom))}
 header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
 .brand{display:flex;align-items:center;gap:11px;min-width:0}
 .logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#38bdf8,#2563eb);display:grid;place-items:center;box-shadow:0 8px 24px #2563eb44;font-size:22px;font-weight:900}
